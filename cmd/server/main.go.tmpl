@@ -9,6 +9,7 @@ import (
 
 	"{{ .Title }}/internal/config"
 	httpInterface "{{ .Title }}/internal/interfaces/http"
+	"{{ .Title }}/internal/interfaces/http/handler"
 	"{{ .Title }}/internal/infrastructure/persistence"
 	userPersistence "{{ .Title }}/internal/infrastructure/persistence/user"
 	domainUser "{{ .Title }}/internal/domain/user"
@@ -85,7 +86,7 @@ func runServer(cmd *cobra.Command, args []string) {
 	userService := domainUser.NewUserService(userRepo)
 
 	// 7. 初始化接口层 Handler
-	userHandler := httpInterface.NewUserHandler(userService)
+	userHandler := handler.NewUserHandler(userService)
 
 	handlers := &httpInterface.Handlers{
 		User: userHandler,
