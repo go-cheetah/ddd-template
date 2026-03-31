@@ -1,0 +1,145 @@
+package handler
+
+import (
+	"strconv"
+
+	"github.com/gin-gonic/gin"
+
+	domainUser "{{ .Title }}/internal/domain/user"
+	"{{ .Title }}/internal/interfaces/http/dto"
+	"{{ .Title }}/internal/pkg/response"
+)
+
+type UserHandler struct {
+	userService *domainUser.UserService
+}
+
+func NewUserHandler(userService *domainUser.UserService) *UserHandler {
+	return &UserHandler{userService: userService}
+}
+
+// Create 创建用户
+// @Summary 创建用户
+// @Tags user
+// @Accept json
+// @Produce json
+// @Param body body dto.CreateUserRequest true "请求"
+// @Success 200 {object} dto.UserResponse
+// @Router /api/v1/users [post]
+func (h *UserHandler) Create(c *gin.Context) {
+	var req dto.CreateUserRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.Error(response.ErrCodeParameter)
+		c.JSON(400, response.Error(response.ErrCodeParameter))
+		return
+	}
+
+	result, err := h.userService.Create(c.Request.Context(), req.Name, req.Email)
+	if err != nil {
+		c.JSON(500, response.ErrorUnknown(response.ErrSQL, err.Error()))
+		return
+	}
+
+	c.JSON(200, response.Success(dto.ToResponse(result)))
+}
+
+// GetByID 查询用户
+// @Summary 查询用户
+// @Tags user
+// @Produce json
+// @Param id path int true "用户ID"
+// @Success 200 {object} dto.UserResponse
+// @Router /api/v1/users/{id} [get]
+func (h *UserHandler) GetByID(c *gin.Context) {
+	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
+	if err != nil {
+		c.JSON(400, response.Error(response.ErrCodeParameter))
+		return
+	}
+
+	result, err := h.userService.GetByID(c.Request.Context(), id)
+	if err != nil {
+		c.JSON(500, response.ErrorUnknown(response.ErrSQL, err.Error()))
+		return
+	}
+
+	c.JSON(200, response.Success(dto.ToResponse(result)))
+}
+
+// List 用户列表
+// @Summary 用户列表
+// @Tags user
+// @Produce json
+// @Param page query int false "页码"
+// @Param pageSize query int false "每页数量"
+// @Success 200 {object} dto.ListUserResponse
+// @Router /api/v1/users [get]
+func (h *UserHandler) List(c *gin.Context) {
+	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
+	pageSize, _ := strconv.Atoi(c.DefaultQuery("pageSize", "10"))
+
+	list, total, err := h.userService.List(c.Request.Context(), page, pageSize)
+	if err != nil {
+		c.JSON(500, response.ErrorUnknown(response.ErrSQL, err.Error()))
+		return
+	}
+
+	c.JSON(200, response.Success(&dto.ListUserResponse{
+		List:     dto.ToResponseList(list),
+		Total:    total,
+		Page:     page,
+		PageSize: pageSize,
+	}))
+}
+
+// Update 更新用户
+// @Summary 更新用户
+// @Tags user
+// @Accept json
+// @Produce json
+// @Param id path int true "用户ID"
+// @Param body body dto.UpdateUserRequest true "请求"
+// @Success 200 {object} dto.UserResponse
+// @Router /api/v1/users/{id} [put]
+func (h *UserHandler) Update(c *gin.Context) {
+	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
+	if err != nil {
+		c.JSON(400, response.Error(response.ErrCodeParameter))
+		return
+	}
+
+	var req dto.UpdateUserRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(400, response.Error(response.ErrCodeParameter))
+		return
+	}
+
+	result, err := h.userService.Update(c.Request.Context(), id, req.Name, req.Email)
+	if err != nil {
+		c.JSON(500, response.ErrorUnknown(response.ErrSQL, err.Error()))
+		return
+	}
+
+	c.JSON(200, response.Success(dto.ToResponse(result)))
+}
+
+// Delete 删除用户
+// @Summary 删除用户
+// @Tags user
+// @Param id path int true "用户ID"
+// @Success 200 {object} response.Response
+// @Router /api/v1/users/{id} [delete]
+func (h *UserHandler) Delete(c *gin.Context) {
+	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
+	if err != nil {
+		c.JSON(400, response.Error(response.ErrCodeParameter))
+		return
+	}
+
+	if err := h.userService.Delete(c.Request.Context(), id); err != nil {
+		c.JSON(500, response.ErrorUnknown(response.ErrSQL, err.Error()))
+		return
+	}
+
+	c.JSON(200, response.Success(nil))
+}

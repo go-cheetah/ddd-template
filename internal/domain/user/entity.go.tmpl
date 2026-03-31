@@ -1,0 +1,57 @@
+package user
+
+import (
+	"errors"
+	"time"
+)
+
+// Status 状态枚举
+type Status int
+
+const (
+	StatusInactive Status = 0
+	StatusActive   Status = 1
+	StatusDeleted  Status = 2
+)
+
+// User 领域实体（聚合根）
+type User struct {
+	ID        int64
+	Name      string
+	Email     string
+	Status    Status
+	CreatedAt time.Time
+	UpdatedAt time.Time
+}
+
+// Validate 验证
+func (u *User) Validate() error {
+	if u.Name == "" {
+		return errors.New("name is required")
+	}
+	if u.Email == "" {
+		return errors.New("email is required")
+	}
+	return nil
+}
+
+// Activate 激活
+func (u *User) Activate() error {
+	if u.Status == StatusDeleted {
+		return errors.New("cannot activate deleted user")
+	}
+	u.Status = StatusActive
+	return nil
+}
+
+// Deactivate 停用
+func (u *User) Deactivate() error {
+	u.Status = StatusInactive
+	return nil
+}
+
+// Delete 删除
+func (u *User) Delete() error {
+	u.Status = StatusDeleted
+	return nil
+}

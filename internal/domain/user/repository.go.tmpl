@@ -1,0 +1,13 @@
+package user
+
+import "context"
+
+// UserRepository 仓储接口
+type UserRepository interface {
+	Save(ctx context.Context, user *User) (*User, error)
+	FindByID(ctx context.Context, id int64) (*User, error)
+	FindByEmail(ctx context.Context, email string) (*User, error)
+	Update(ctx context.Context, user *User) (*User, error)
+	Delete(ctx context.Context, id int64) error
+	List(ctx context.Context, page, pageSize int) ([]*User, int64, error)
+}

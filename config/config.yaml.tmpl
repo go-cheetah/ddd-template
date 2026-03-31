@@ -1,0 +1,36 @@
+# 服务器配置
+server:
+  bind: "0.0.0.0"
+  port: 9000
+  mode: debug  # debug, release, test
+  cors:
+    origins:
+      - "*"
+    methods:
+      - GET
+      - POST
+      - PUT
+      - PATCH
+      - DELETE
+
+# 数据库配置
+db:
+  type: sqlite  # mysql or sqlite
+  mysql:
+    host: 127.0.0.1
+    port: 3306
+    user: root
+    password: root
+    database: test
+    charset: utf8mb4
+  sqlite:
+    path: ./data.db
+
+# 日志配置
+log:
+  infoFilename: logs/info.log
+  errorFilename: logs/error.log
+  maxSize: 10       # MB
+  maxBackups: 5
+  maxAge: 10        # days
+  level: info       # debug, info, warn, error

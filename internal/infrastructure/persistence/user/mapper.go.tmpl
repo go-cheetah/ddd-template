@@ -1,0 +1,38 @@
+package user
+
+import (
+	domainUser "{{ .Title }}/internal/domain/user"
+)
+
+// toModel 领域对象转 GORM 模型
+func toModel(u *domainUser.User) *UserModel {
+	return &UserModel{
+		ID:        u.ID,
+		Name:      u.Name,
+		Email:     u.Email,
+		Status:    int(u.Status),
+		CreatedAt: u.CreatedAt,
+		UpdatedAt: u.UpdatedAt,
+	}
+}
+
+// toDomain GORM 模型转领域对象
+func toDomain(m *UserModel) *domainUser.User {
+	return &domainUser.User{
+		ID:        m.ID,
+		Name:      m.Name,
+		Email:     m.Email,
+		Status:    domainUser.Status(m.Status),
+		CreatedAt: m.CreatedAt,
+		UpdatedAt: m.UpdatedAt,
+	}
+}
+
+// toDomainList GORM 模型列表转领域对象列表
+func toDomainList(models []UserModel) []*domainUser.User {
+	users := make([]*domainUser.User, len(models))
+	for i, m := range models {
+		users[i] = toDomain(&m)
+	}
+	return users
+}

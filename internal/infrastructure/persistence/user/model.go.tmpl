@@ -1,0 +1,17 @@
+package user
+
+import "time"
+
+// UserModel GORM 模型
+type UserModel struct {
+	ID        int64     `gorm:"primaryKey"`
+	Name      string    `gorm:"size:64;not null"`
+	Email     string    `gorm:"size:128;not null;uniqueIndex"`
+	Status    int       `gorm:"default:1"`
+	CreatedAt time.Time `gorm:"autoCreateTime"`
+	UpdatedAt time.Time `gorm:"autoUpdateTime"`
+}
+
+func (UserModel) TableName() string {
+	return "users"
+}

@@ -1,0 +1,38 @@
+package config
+
+import (
+	"path"
+	"runtime"
+
+	"github.com/spf13/viper"
+)
+
+func New(loadPath string) *Config {
+	var conf *Config
+	viper.AutomaticEnv()
+	viper.SetConfigFile(loadPath)
+	err := viper.ReadInConfig()
+	if err != nil {
+		panic(err)
+	}
+	err = viper.Unmarshal(&conf)
+	if err != nil {
+		panic(err)
+	}
+	return conf
+}
+
+type Config struct {
+	DB     DB
+	Log    Log
+	Server Server
+}
+
+func GetCurrPath() string {
+	var abPath string
+	_, filename, _, ok := runtime.Caller(1)
+	if ok {
+		abPath = path.Dir(filename)
+	}
+	return abPath
+}

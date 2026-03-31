@@ -1,0 +1,40 @@
+package http
+
+import (
+	"github.com/gin-gonic/gin"
+	swaggerFiles "github.com/swaggo/files"
+	ginSwagger "github.com/swaggo/gin-swagger"
+
+	"{{ .Title }}/internal/interfaces/http/handler"
+
+	_ "{{ .Title }}/docs"
+)
+
+// Handlers 包含所有 Handler
+type Handlers struct {
+	User *handler.UserHandler
+}
+
+// RegisterRoutes 注册路由
+func RegisterRoutes(r *gin.Engine, handlers *Handlers) {
+	// 健康检查
+	r.GET("/health", func(c *gin.Context) {
+		c.JSON(200, gin.H{"status": "ok"})
+	})
+
+	// API v1
+	v1 := r.Group("/api/v1")
+	{
+		users := v1.Group("/users")
+		{
+			users.POST("", handlers.User.Create)
+			users.GET("", handlers.User.List)
+			users.GET("/:id", handlers.User.GetByID)
+			users.PUT("/:id", handlers.User.Update)
+			users.DELETE("/:id", handlers.User.Delete)
+		}
+	}
+
+	// Swagger
+	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
+}

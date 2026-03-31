@@ -1,0 +1,33 @@
+.PHONY: all build run test clean swag
+
+APP_NAME := {{ .Title }}
+VERSION := 1.0.0
+BUILD_TIME := $(shell date +%Y%m%d%H%M%S)
+
+# 构建
+build:
+	go build -ldflags "-X main.Version=${VERSION} -X main.BuildTime=${BUILD_TIME}" -o bin/${APP_NAME} cmd/server/main.go
+
+# 运行
+run:
+	go run cmd/server/main.go
+
+# 测试
+test:
+	go test -v ./...
+
+# 清理
+clean:
+	rm -rf bin/
+	rm -rf logs/
+
+# Swagger 文档生成
+swag:
+	swag init -g cmd/server/main.go -o ./docs --parseDependency --parseInternal
+
+# Docker 构建
+docker-build:
+	docker build -t ${APP_NAME}:${VERSION} -f build/Dockerfile .
+
+docker-run:
+	docker run -p 9000:9000 ${APP_NAME}:${VERSION}

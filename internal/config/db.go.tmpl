@@ -1,0 +1,27 @@
+package config
+
+type DB struct {
+	Type string
+	Mysql struct {
+		Host     string
+		Port     int
+		User     string
+		Password string
+		Database string
+		Charset  string
+	}
+	Sqlite struct {
+		Path string
+	}
+}
+
+func (d *DB) GetConnectionString() string {
+	switch d.Type {
+	case "mysql":
+		return d.Mysql.User + ":" + d.Mysql.Password + "@tcp(" + d.Mysql.Host + ":" + string(rune(d.Mysql.Port)) + ")/" + d.Mysql.Database + "?charset=" + d.Mysql.Charset
+	case "sqlite":
+		return d.Sqlite.Path
+	default:
+		return ""
+	}
+}

@@ -1,0 +1,38 @@
+package persistence
+
+import (
+	"fmt"
+
+	"gorm.io/gorm"
+
+	"{{ .Title }}/internal/config"
+	"{{ .Title }}/pkg/database"
+)
+
+// InitDB 初始化数据库连接
+func InitDB(cfg *config.DB) (*gorm.DB, error) {
+	var connectionString string
+
+	switch cfg.Type {
+	case "mysql":
+		connectionString = fmt.Sprintf("%s:%s@tcp(%s:%d)/%s?charset=%s",
+			cfg.Mysql.User,
+			cfg.Mysql.Password,
+			cfg.Mysql.Host,
+			cfg.Mysql.Port,
+			cfg.Mysql.Database,
+			cfg.Mysql.Charset,
+		)
+	case "sqlite":
+		connectionString = cfg.Sqlite.Path
+	default:
+		return nil, fmt.Errorf("unsupported database type: %s", cfg.Type)
+	}
+
+	db := database.New(cfg.Type, connectionString)
+	if db == nil {
+		return nil, fmt.Errorf("failed to connect database")
+	}
+
+	return db.GetDB(), nil
+}

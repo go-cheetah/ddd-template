@@ -1,0 +1,20 @@
+package user
+
+import (
+	"gorm.io/gorm"
+
+	"{{ .Title }}/internal/pkg/migration"
+)
+
+// RegisterMigrations 注册用户模块迁移
+func RegisterMigrations(registry *migration.MigrationRegistry) {
+	registry.Register("20240101001", "create_users_table", createUserTable, dropUserTable)
+}
+
+func createUserTable(db *gorm.DB) error {
+	return db.AutoMigrate(&UserModel{})
+}
+
+func dropUserTable(db *gorm.DB) error {
+	return db.Migrator().DropTable(&UserModel{})
+}

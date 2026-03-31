@@ -1,0 +1,67 @@
+package user
+
+import (
+	"context"
+	"errors"
+)
+
+// UserService 领域服务
+type UserService struct {
+	repo UserRepository
+}
+
+func NewUserService(repo UserRepository) *UserService {
+	return &UserService{repo: repo}
+}
+
+// Create 创建用户
+func (s *UserService) Create(ctx context.Context, name, email string) (*User, error) {
+	existing, _ := s.repo.FindByEmail(ctx, email)
+	if existing != nil {
+		return nil, errors.New("email already exists")
+	}
+
+	user := &User{
+		Name:   name,
+		Email:  email,
+		Status: StatusActive,
+	}
+
+	if err := user.Validate(); err != nil {
+		return nil, err
+	}
+
+	return s.repo.Save(ctx, user)
+}
+
+// GetByID 查询用户
+func (s *UserService) GetByID(ctx context.Context, id int64) (*User, error) {
+	return s.repo.FindByID(ctx, id)
+}
+
+// Update 更新用户
+func (s *UserService) Update(ctx context.Context, id int64, name, email string) (*User, error) {
+	user, err := s.repo.FindByID(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+
+	user.Name = name
+	user.Email = email
+
+	if err := user.Validate(); err != nil {
+		return nil, err
+	}
+
+	return s.repo.Update(ctx, user)
+}
+
+// Delete 删除用户
+func (s *UserService) Delete(ctx context.Context, id int64) error {
+	return s.repo.Delete(ctx, id)
+}
+
+// List 用户列表
+func (s *UserService) List(ctx context.Context, page, pageSize int) ([]*User, int64, error) {
+	return s.repo.List(ctx, page, pageSize)
+}

@@ -1,0 +1,33 @@
+package database
+
+import (
+	"fmt"
+
+	"gorm.io/driver/sqlite"
+	"gorm.io/gorm"
+)
+
+type SQLiteDB struct {
+	db *gorm.DB
+}
+
+func (s *SQLiteDB) Connect(connectionString string) error {
+	db, err := gorm.Open(sqlite.Open(connectionString), &gorm.Config{})
+	if err != nil {
+		return fmt.Errorf("failed to connect sqlite: %w", err)
+	}
+	s.db = db
+	return nil
+}
+
+func (s *SQLiteDB) Close() error {
+	sqlDB, err := s.db.DB()
+	if err != nil {
+		return err
+	}
+	return sqlDB.Close()
+}
+
+func (s *SQLiteDB) GetDB() *gorm.DB {
+	return s.db
+}

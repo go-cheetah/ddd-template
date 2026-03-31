@@ -1,0 +1,131 @@
+package migration
+
+import (
+	"fmt"
+	"log"
+
+	"gorm.io/gorm"
+)
+
+type MigrationFunc func(*gorm.DB) error
+
+type MigrationItem struct {
+	Version string
+	Name    string
+	Up      MigrationFunc
+	Down    MigrationFunc
+}
+
+type MigrationRegistry struct {
+	Migrations []MigrationItem
+}
+
+func NewMigrationRegistry() *MigrationRegistry {
+	return &MigrationRegistry{
+		Migrations: make([]MigrationItem, 0),
+	}
+}
+
+func (r *MigrationRegistry) Register(version, name string, up, down MigrationFunc) {
+	r.Migrations = append(r.Migrations, MigrationItem{
+		Version: version,
+		Name:    name,
+		Up:      up,
+		Down:    down,
+	})
+}
+
+func RunMigrations(db *gorm.DB, registry *MigrationRegistry) error {
+	AutoMigrate(db)
+
+	client := New(db)
+
+	appliedMigrations, err := client.GetAppliedMigrations()
+	if err != nil {
+		return fmt.Errorf("获取已应用迁移失败: %w", err)
+	}
+
+	appliedMap := make(map[string]bool)
+	for _, m := range appliedMigrations {
+		appliedMap[m.Version] = true
+	}
+
+	for _, migration := range registry.Migrations {
+		if !appliedMap[migration.Version] {
+			log.Printf("应用迁移: %s - %s", migration.Version, migration.Name)
+
+			tx := db.Begin()
+			if tx.Error != nil {
+				return fmt.Errorf("开始事务失败: %w", tx.Error)
+			}
+
+			if err := migration.Up(tx); err != nil {
+				tx.Rollback()
+				return fmt.Errorf("迁移失败 %s: %w", migration.Version, err)
+			}
+
+			if err := tx.Commit().Error; err != nil {
+				return fmt.Errorf("提交事务失败: %w", err)
+			}
+
+			if err := client.RecordMigration(migration.Version); err != nil {
+				return fmt.Errorf("记录迁移失败 %s: %w", migration.Version, err)
+			}
+
+			log.Printf("迁移成功: %s", migration.Version)
+		}
+	}
+
+	return nil
+}
+
+func RollbackMigration(db *gorm.DB, registry *MigrationRegistry, version string) error {
+	AutoMigrate(db)
+
+	client := New(db)
+
+	hasMigration, err := client.HasMigration(version)
+	if err != nil {
+		return fmt.Errorf("检查迁移状态失败: %w", err)
+	}
+
+	if !hasMigration {
+		return fmt.Errorf("迁移 %s 未应用，无法回滚", version)
+	}
+
+	var migrationItem *MigrationItem
+	for _, m := range registry.Migrations {
+		if m.Version == version {
+			migrationItem = &m
+			break
+		}
+	}
+
+	if migrationItem == nil {
+		return fmt.Errorf("未找到迁移 %s 的定义", version)
+	}
+
+	log.Printf("回滚迁移: %s - %s", migrationItem.Version, migrationItem.Name)
+
+	tx := db.Begin()
+	if tx.Error != nil {
+		return fmt.Errorf("开始事务失败: %w", tx.Error)
+	}
+
+	if err := migrationItem.Down(tx); err != nil {
+		tx.Rollback()
+		return fmt.Errorf("回滚失败 %s: %w", version, err)
+	}
+
+	if err := tx.Where("version = ?", version).Delete(&Migration{}).Error; err != nil {
+		tx.Rollback()
+		return fmt.Errorf("删除迁移记录失败 %s: %w", version, err)
+	}
+
+	if err := tx.Commit().Error; err != nil {
+		return fmt.Errorf("提交事务失败: %w", err)
+	}
+
+	log.Printf("回滚成功: %s", version)
+	return nil
+}

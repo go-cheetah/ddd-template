@@ -1,0 +1,120 @@
+package main
+
+import (
+	"fmt"
+	"time"
+
+	"github.com/gin-gonic/gin"
+	"github.com/spf13/cobra"
+
+	"{{ .Title }}/internal/config"
+	httpInterface "{{ .Title }}/internal/interfaces/http"
+	"{{ .Title }}/internal/infrastructure/persistence"
+	userPersistence "{{ .Title }}/internal/infrastructure/persistence/user"
+	domainUser "{{ .Title }}/internal/domain/user"
+	"{{ .Title }}/internal/pkg/migration"
+	"{{ .Title }}/pkg/cors"
+	"{{ .Title }}/pkg/log"
+)
+
+// @title {{ .Title }} API
+// @version 1.0
+// @description {{ .Title }} API Server Documentation
+// @termsOfService http://swagger.io/terms/
+
+// @contact.name API Support
+// @contact.url http://www.swagger.io/support
+// @contact.email support@swagger.io
+
+// @license.name Apache 2.0
+// @license.url http://www.apache.org/licenses/LICENSE-2.0.html
+
+// @host localhost:9000
+// @BasePath /api/v1
+
+var (
+	Version   = "1.0.0"
+	BuildTime = ""
+	configPath string
+)
+
+func main() {
+	cmd := &cobra.Command{
+		Use:   "{{ .Title }}",
+		Short: "{{ .Title }} server",
+		Run:   runServer,
+	}
+	cmd.Flags().StringVarP(&configPath, "config", "c", "config/config.yaml", "config file path")
+
+	if err := cmd.Execute(); err != nil {
+		fmt.Println(err)
+	}
+}
+
+func runServer(cmd *cobra.Command, args []string) {
+	// 1. 加载配置
+	cfg := config.New(configPath)
+
+	// 2. 初始化日志
+	logClient := log.NewClient(
+		cfg.Log.InfoFilename,
+		cfg.Log.ErrorFilename,
+		cfg.Log.Level,
+		cfg.Log.MaxSize,
+		cfg.Log.MaxBackups,
+		cfg.Log.MaxAge,
+	)
+
+	// 3. 初始化基础设施层
+	db, err := persistence.InitDB(&cfg.DB)
+	if err != nil {
+		panic(fmt.Sprintf("failed to init database: %v", err))
+	}
+
+	// 4. 运行迁移
+	registry := migration.NewMigrationRegistry()
+	userPersistence.RegisterMigrations(registry)
+	if err := migration.RunMigrations(db, registry); err != nil {
+		panic(fmt.Sprintf("failed to run migrations: %v", err))
+	}
+
+	// 5. 初始化仓储实现
+	userRepo := userPersistence.NewUserRepository(db)
+
+	// 6. 初始化领域层（依赖注入）
+	userService := domainUser.NewUserService(userRepo)
+
+	// 7. 初始化接口层 Handler
+	userHandler := httpInterface.NewUserHandler(userService)
+
+	handlers := &httpInterface.Handlers{
+		User: userHandler,
+	}
+
+	// 8. 启动 HTTP 服务
+	gin.SetMode(cfg.Server.Mode)
+	r := gin.New()
+
+	// 中间件
+	corsConfig := cors.Config{
+		AllowOrigins:     cfg.Server.Cors.Origins,
+		AllowMethods:     cfg.Server.Cors.Methods,
+		AllowHeaders:     []string{"Origin", "Content-Type", "Authorization"},
+		ExposeHeaders:    []string{"Content-Length"},
+		AllowCredentials: true,
+		MaxAge:           12 * time.Hour,
+	}
+	r.Use(log.GinLogger(logClient.Logger))
+	r.Use(log.GinRecovery(logClient.Logger, true))
+	r.Use(cors.New(corsConfig))
+
+	// 注册路由
+	httpInterface.RegisterRoutes(r, handlers)
+
+	// 启动服务
+	addr := cfg.Server.Bind + ":" + cfg.Server.Port
+	fmt.Printf("Server starting on %s\n", addr)
+	if err := r.Run(addr); err != nil {
+		panic(fmt.Sprintf("failed to start server: %v", err))
+	}
+}

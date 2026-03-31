@@ -1,0 +1,26 @@
+package dto
+
+import (
+	domainUser "{{ .Title }}/internal/domain/user"
+)
+
+// ToResponse 领域对象转响应 DTO
+func ToResponse(u *domainUser.User) *UserResponse {
+	return &UserResponse{
+		ID:        u.ID,
+		Name:      u.Name,
+		Email:     u.Email,
+		Status:    int(u.Status),
+		CreatedAt: u.CreatedAt,
+		UpdatedAt: u.UpdatedAt,
+	}
+}
+
+// ToResponseList 领域对象列表转响应 DTO 列表
+func ToResponseList(users []*domainUser.User) []*UserResponse {
+	result := make([]*UserResponse, len(users))
+	for i, u := range users {
+		result[i] = ToResponse(u)
+	}
+	return result
+}
