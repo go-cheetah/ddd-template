@@ -3,6 +3,7 @@ package user
 import (
 	"gorm.io/gorm"
 
+	"{{ .Title }}/internal/infrastructure/persistence/model"
 	"{{ .Title }}/internal/pkg/migration"
 )
 
@@ -12,9 +13,9 @@ func RegisterMigrations(registry *migration.MigrationRegistry) {
 }
 
 func createUserTable(db *gorm.DB) error {
-	return db.AutoMigrate(&UserModel{})
+	return db.AutoMigrate(&model.UserModel{})
 }
 
 func dropUserTable(db *gorm.DB) error {
-	return db.Migrator().DropTable(&UserModel{})
+	return db.Migrator().DropTable(&model.UserModel{})
 }
