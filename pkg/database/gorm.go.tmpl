@@ -1,6 +1,8 @@
 package database
 
 import (
+	"errors"
+
 	"gorm.io/gorm"
 )
 
@@ -18,7 +20,7 @@ type Option interface {
 	apply(*Options)
 }
 
-func New(dbType, connectionString string, opts ...Option) DB {
+func New(dbType, connectionString string, opts ...Option) (DB, error) {
 	var database DB
 
 	switch dbType {
@@ -27,12 +29,12 @@ func New(dbType, connectionString string, opts ...Option) DB {
 	case "mysql":
 		database = &MySQLDB{}
 	default:
-		return nil
+		return nil, errors.New("unsupported database type: " + dbType)
 	}
 
 	err := database.Connect(connectionString)
 	if err != nil {
-		return nil
+		return nil, err
 	}
 
 	options := Options{
@@ -42,5 +44,5 @@ func New(dbType, connectionString string, opts ...Option) DB {
 		o.apply(&options)
 	}
 
-	return database
+	return database, nil
 }

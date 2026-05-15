@@ -29,9 +29,9 @@ func InitDB(cfg *config.DB) (*gorm.DB, error) {
 		return nil, fmt.Errorf("unsupported database type: %s", cfg.Type)
 	}
 
-	db := database.New(cfg.Type, connectionString)
-	if db == nil {
-		return nil, fmt.Errorf("failed to connect database")
+	db, err := database.New(cfg.Type, connectionString)
+	if err != nil {
+		return nil, fmt.Errorf("failed to connect database: %w", err)
 	}
 
 	return db.GetDB(), nil
