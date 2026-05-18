@@ -6,11 +6,11 @@ BUILD_TIME := $(shell date +%Y%m%d%H%M%S)
 
 # 构建
 build:
-	go build -ldflags "-X main.Version=${VERSION} -X main.BuildTime=${BUILD_TIME}" -o bin/${APP_NAME} cmd/server/main.go
+	go build -ldflags "-X main.Version=${VERSION} -X main.BuildTime=${BUILD_TIME}" -o bin/${APP_NAME} cmd/app/main.go
 
 # 运行
 run:
-	go run cmd/server/main.go
+	go run cmd/app/main.go
 
 # 测试
 test:
@@ -23,7 +23,7 @@ clean:
 
 # Swagger 文档生成
 swag:
-	swag init -g cmd/server/main.go -o ./docs --parseDependency --parseInternal
+	swag init -g cmd/app/main.go -o ./docs --parseDependency --parseInternal
 
 # Docker 构建
 docker-build:
