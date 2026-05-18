@@ -6,8 +6,8 @@
 go install github.com/swaggo/swag/cmd/swag@latest
 go mod tidy
 go get -u github.com/swaggo/swag@latest
-swag init -g cmd/server/main.go
-go run cmd/server/main.go
+swag init -g cmd/app/main.go
+go run cmd/app/main.go
 ```
 
 > 个人理解：DDD（领域驱动设计）强调领域模型的重要性，通过分层架构实现业务逻辑与技术实现的解耦。简化版 DDD 保留核心思想：聚合根、实体、仓储接口，舍弃复杂的值对象和领域事件，适合中小型项目。

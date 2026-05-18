@@ -1,0 +1,26 @@
+package server
+
+import (
+	domainUser "{{ .Title }}/internal/domain/user"
+	userPersistence "{{ .Title }}/internal/infrastructure/persistence/user"
+	httpInterface "{{ .Title }}/internal/interfaces/http"
+	"{{ .Title }}/internal/interfaces/http/handler"
+)
+
+// SetupRouter 完成依赖注入并注册 HTTP 路由
+func (s *Server) SetupRouter() {
+	db := s.DB.GetDB()
+
+	// 仓储实现
+	userRepo := userPersistence.NewUserRepository(db)
+
+	// 领域服务
+	userService := domainUser.NewUserService(userRepo)
+
+	// 接口层 Handler
+	handlers := &httpInterface.Handlers{
+		User: handler.NewUserHandler(userService),
+	}
+
+	httpInterface.RegisterRoutes(s.Gin, handlers)
+}

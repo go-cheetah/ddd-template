@@ -62,11 +62,14 @@ func newCors(config Config) *cors {
 func (cors *cors) applyCors(c *gin.Context) {
 	origin := c.Request.Header.Get("Origin")
 	if len(origin) == 0 {
+		// request is not a CORS request
 		return
 	}
 	host := c.Request.Host
 
 	if origin == "http://"+host || origin == "https://"+host {
+		// request is not a CORS request but have origin header.
+		// for example, use fetch api
 		return
 	}
 
@@ -77,7 +80,7 @@ func (cors *cors) applyCors(c *gin.Context) {
 
 	if c.Request.Method == "OPTIONS" {
 		cors.handlePreflight(c)
-		defer c.AbortWithStatus(http.StatusNoContent)
+		defer c.AbortWithStatus(http.StatusNoContent) // Using 204 is better than 200 when the request status is OPTIONS
 	} else {
 		cors.handleNormal(c)
 	}

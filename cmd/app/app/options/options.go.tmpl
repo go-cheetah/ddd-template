@@ -1,0 +1,71 @@
+package options
+
+import (
+	"fmt"
+	"path/filepath"
+
+	"github.com/gin-gonic/gin"
+
+	"{{ .Title }}/internal/config"
+	"{{ .Title }}/internal/server"
+	"{{ .Title }}/pkg/database"
+	"{{ .Title }}/pkg/log"
+)
+
+type AppOptions struct {
+	ConfFile string
+	Config   *config.Config
+}
+
+func NewAppOptions() *AppOptions {
+	o := &AppOptions{}
+	return o
+}
+
+func (o *AppOptions) NewServer() (*server.Server, error) {
+	s := server.NewServer()
+	o.loadConfig(o.ConfFile)
+	s.Config = o.Config
+
+	gin.SetMode(s.Config.Server.Mode)
+	s.Gin = gin.New()
+
+	s.Log = log.NewClient(o.Config.Log.InfoFilePath, o.Config.Log.ErrorFilePath, o.Config.Log.Level,
+		o.Config.Log.MaxSize, o.Config.Log.MaxBackups, o.Config.Log.MaxAge,
+	)
+
+	var connStr string
+	if o.Config.DB.Type == "sqlite" {
+		connStr = o.Config.DB.Sqlite.Path
+	} else {
+		connStr = fmt.Sprintf("%s:%s@tcp(%s:%d)/%s?charset=%s&parseTime=True&loc=Local",
+			o.Config.DB.Mysql.User,
+			o.Config.DB.Mysql.Password,
+			o.Config.DB.Mysql.Host,
+			o.Config.DB.Mysql.Port,
+			o.Config.DB.Mysql.Database,
+			o.Config.DB.Mysql.Charset)
+	}
+
+	db, err := database.New(o.Config.DB.Type, connStr, database.WithMigrate(true))
+	if err != nil {
+		return nil, err
+	}
+	s.DB = db
+
+	return s, nil
+}
+
+func (o *AppOptions) loadConfig(configFile string) {
+	o.Config = config.New(configFile)
+	if o.Config.Log.Path == "" {
+		o.Config.Log.Path = "./log"
+	}
+	absPath, err := filepath.Abs(o.Config.Log.Path)
+	if err != nil {
+		fmt.Printf("转换失败: %v\n", err)
+		absPath = o.Config.Log.Path
+	}
+	o.Config.Log.ErrorFilePath = absPath + "/" + o.Config.Log.ErrorFilename
+	o.Config.Log.InfoFilePath = absPath + "/" + o.Config.Log.InfoFilename
+}
