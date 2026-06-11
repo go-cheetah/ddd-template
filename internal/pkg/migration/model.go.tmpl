@@ -29,6 +29,14 @@ func AutoMigrate(db *gorm.DB) {
 func Init(db *gorm.DB) {
 }
 
+func recordMigrationTx(tx *gorm.DB, version string) error {
+	migration := Migration{
+		Version:   version,
+		AppliedAt: time.Now(),
+	}
+	return tx.Create(&migration).Error
+}
+
 func (c *Client) RecordMigration(version string) error {
 	has, err := c.HasMigration(version)
 	if err != nil {

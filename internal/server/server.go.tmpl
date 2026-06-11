@@ -1,7 +1,6 @@
 package server
 
 import (
-	"fmt"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -38,7 +37,7 @@ func NewServer() *Server {
 	return &Server{}
 }
 
-func (s *Server) Run() {
+func (s *Server) Run() error {
 	c := cors.New(cors.Config{
 		AllowOrigins:     s.Config.Server.Origins,
 		AllowMethods:     s.Config.Server.Methods,
@@ -55,12 +54,15 @@ func (s *Server) Run() {
 		log.GinRecovery(s.Log.Logger, true),
 		c)
 
-	s.migrate()
+	if err := s.migrate(); err != nil {
+		return err
+	}
 
 	s.SetupRouter()
 
 	err := s.Gin.Run(s.Config.Server.Bind + ":" + s.Config.Server.Port)
 	if err != nil {
-		fmt.Println(err)
+		return err
 	}
+	return nil
 }
