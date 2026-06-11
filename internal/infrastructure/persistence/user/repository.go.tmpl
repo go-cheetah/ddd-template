@@ -2,6 +2,7 @@ package user
 
 import (
 	"context"
+	"errors"
 
 	"gorm.io/gorm"
 
@@ -28,6 +29,9 @@ func (r *userRepository) Save(ctx context.Context, u *domainUser.User) (*domainU
 func (r *userRepository) FindByID(ctx context.Context, id int64) (*domainUser.User, error) {
 	var m model.UserModel
 	if err := r.db.WithContext(ctx).First(&m, id).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, domainUser.ErrUserNotFound
+		}
 		return nil, err
 	}
 	return toDomain(&m), nil
@@ -36,6 +40,9 @@ func (r *userRepository) FindByID(ctx context.Context, id int64) (*domainUser.Us
 func (r *userRepository) FindByEmail(ctx context.Context, email string) (*domainUser.User, error) {
 	var m model.UserModel
 	if err := r.db.WithContext(ctx).Where("email = ?", email).First(&m).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, domainUser.ErrUserNotFound
+		}
 		return nil, err
 	}
 	return toDomain(&m), nil

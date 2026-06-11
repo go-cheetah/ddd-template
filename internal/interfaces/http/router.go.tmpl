@@ -1,11 +1,15 @@
 package http
 
 import (
+	"net/http"
+
 	"github.com/gin-gonic/gin"
 	swaggerFiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
 
 	"{{ .Title }}/internal/interfaces/http/handler"
+	httpRes "{{ .Title }}/internal/interfaces/http/res"
+	"{{ .Title }}/internal/pkg/response"
 
 	_ "{{ .Title }}/docs"
 )
@@ -17,9 +21,11 @@ type Handlers struct {
 
 // RegisterRoutes 注册路由
 func RegisterRoutes(r *gin.Engine, handlers *Handlers) {
+	httpRes.RegisterCode()
+
 	// 健康检查
 	r.GET("/health", func(c *gin.Context) {
-		c.JSON(200, gin.H{"status": "ok"})
+		c.JSON(http.StatusOK, response.Success("ok"))
 	})
 
 	// API v1

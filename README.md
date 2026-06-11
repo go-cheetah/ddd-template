@@ -39,6 +39,7 @@ go run cmd/app/main.go
 │   ├── domain                            # 领域层（对应 Kratos 的 biz）
 │   │   └── user                          # 案例
 │   │       ├── entity.go                 # 领域实体（聚合根）
+│   │       ├── errors.go                 # 领域错误
 │   │       ├── repository.go             # 仓储接口（依赖倒置）
 │   │       └── service.go                # 领域服务/用例
 │   ├── infrastructure                    # 基础设施层（对应 Kratos 的 data）
@@ -57,6 +58,8 @@ go run cmd/app/main.go
 │   │       │   └── user_dto.go           # 请求/响应 DTO
 │   │       ├── handler                   # Handler 函数
 │   │       │   └── user_handler.go       # Gin Handler，调用领域服务
+│   │       ├── res                       # HTTP 错误码注册
+│   │       │   └── response_code.go      # 模块业务错误码
 │   │       └── router.go                 # 路由注册
 │   ├── pkg                               # 内部公共包
 │   │   ├── migration                     # 迁移系统
@@ -106,6 +109,13 @@ go run cmd/app/main.go
 2. `server.Run()` 装配 CORS、日志、Recovery 中间件
 3. `server.migrate()` 调用 `internal/infrastructure/persistence/<aggregate>.RegisterMigrations`
 4. `server.SetupRouter()` 完成 repository → service → handler 的依赖注入，并委托 `internal/interfaces/http.RegisterRoutes`
+
+## 返回值和错误码
+
+- HTTP 层统一返回 `200`
+- 业务成功失败通过 `internal/pkg/response` 的 `code / message / data` 表达
+- 模块业务错误码在 `internal/interfaces/http/res/response_code.go` 注册
+- handler 可以直接返回业务码，只有在错误翻译逻辑复用明显时再考虑额外抽 mapper
 
 ## 使用模块
 

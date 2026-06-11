@@ -9,14 +9,16 @@ var (
 )
 
 const (
-	CodeSuccess = 0
+	CodeSuccess      = 0
 	ErrCodeParameter = 41001
-	ErrSQL = 50000
+	ErrSQL           = 50000
 )
 
 func Init() {
-	codeMsgMap = make(map[int]string, 1024)
-	codeMsgMap = baseRes(codeMsgMap)
+	once.Do(func() {
+		codeMsgMap = make(map[int]string, 1024)
+		codeMsgMap = baseRes(codeMsgMap)
+	})
 }
 
 func baseRes(msg map[int]string) map[int]string {

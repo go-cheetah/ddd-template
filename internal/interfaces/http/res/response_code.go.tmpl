@@ -1,0 +1,17 @@
+package res
+
+import "{{ .Title }}/internal/pkg/response"
+
+const (
+	ErrUserNotFound      = 10001
+	ErrUserAlreadyExists = 10002
+	ErrUserNameRequired  = 10003
+	ErrUserEmailRequired = 10004
+)
+
+func RegisterCode() {
+	response.Register(ErrUserNotFound, "用户不存在")
+	response.Register(ErrUserAlreadyExists, "用户已存在")
+	response.Register(ErrUserNameRequired, "用户名不能为空")
+	response.Register(ErrUserEmailRequired, "用户邮箱不能为空")
+}
